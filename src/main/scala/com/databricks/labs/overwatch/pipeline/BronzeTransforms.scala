@@ -951,5 +951,11 @@ trait BronzeTransforms extends SparkSessionWrapper {
     eventLogPaths
 
   }
+  protected def cleanseRawWarehouseSnapDF(df: DataFrame): DataFrame = {
+    val outputDF = SchemaScrubber.scrubSchema(df)
+    outputDF
+      .withColumn("tags", SchemaTools.structToMap(outputDF, "tags"))
+      .withColumn("odbc_params", SchemaTools.structToMap(outputDF, "odbc_params"))
 
+  }
 }

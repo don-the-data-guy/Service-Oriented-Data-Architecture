@@ -1291,4 +1291,119 @@ trait SilverTransforms extends SparkSessionWrapper {
 
   }
 
+  private def warehouseBase(auditRawDF: DataFrame): DataFrame = {
+    val warehouse_id_gen_w = Window.partitionBy('organization_id, 'name).orderBy('timestamp).rowsBetween(Window.currentRow, 1000)
+    val warehouse_name_gen_w = Window.partitionBy('organization_id, 'id).orderBy('timestamp).rowsBetween(Window.currentRow, 1000)
+    val warehouse_id_gen = first('id, true).over(warehouse_id_gen_w)
+    val warehouse_name_gen = first('name, true).over(warehouse_name_gen_w)
+
+    val warehouseSummaryCols = auditBaseCols ++ Array[Column](
+      when('actionName === "createEndpoint" || 'actionName === "createWarehouse", get_json_object($"response.result", "$.id"))
+        .when(('actionName =!= "createEndpoint" && 'id.isNull) || ('actionName =!= "createWarehouse" && 'id.isNull), 'clusterId)
+        .otherwise('warehouse_id).alias("warehouse_id"),
+      when('warehouse_name.isNull, 'name).otherwise('warehouse_name).alias("warehouse_name"),
+      'state.alias("warehouse_state"),
+      'size,
+      'cluster_size,
+      'min_num_clusters,
+      'max_num_clusters,
+      'auto_stop_mins,
+      'auto_resume,
+      'creator_name,
+      'creator_id,
+      'spot_instance_policy,
+      'enable_photon,
+      'channel,
+      'tag,
+      'enable_serverless_compute,
+      'warehouse_type,
+      'num_clusters,
+      'num_active_sessions,
+      'jdbc_url,
+      'odbc_params
+    )
+
+    val warehouseRaw = auditRawDF
+      .filter('serviceName === "databrickssql")
+      .selectExpr("*", "requestParams.*").drop("requestParams", "Overwatch_RunID")
+      .select(warehouseSummaryCols: _*)
+      .withColumn("warehouse_id", warehouse_id_gen)
+      .withColumn("warehouse_name", warehouse_name_gen)
+
+    warehouseRaw
+  }
+
+  protected def buildWarehouseSpec(
+                                  bronze_warehouse_snap: PipelineTable,
+                                  isFirstRun: Boolean,
+                                  untilTime: TimeTypes
+                                )(df: DataFrame): DataFrame = {
+    val lastWarehouseSnap = Window.partitionBy('organization_id, 'id).orderBy('Pipeline_SnapTS.desc)
+    val warehouseBefore = Window.partitionBy('organization_id, 'id)
+      .orderBy('timestamp).rowsBetween(-1000, Window.currentRow)
+
+    val warehouseBaseDF = warehouseBase(df)
+    val warehouseBaseWMetaDF = warehouseBaseDF
+      // remove start, startResults, and permanentDelete as they do not contain sufficient metadata
+      .filter('actionName.isin("createEndpoint", "editEndpoint", "createWarehouse", "editWarehouse"))
+    val bronzeWarehouseSnapUntilCurrent = bronze_warehouse_snap.asDF
+      .filter('Pipeline_SnapTS <= untilTime.asColumnTS)
+
+    /**
+     * warehouseBaseFilled - if first run, baseline warehouse spec for existing warehouses that haven't been edited since
+     * commencement of audit logs. Allows for joins directly to gold warehouse work even if they haven't yet been edited.
+     * Several of the fields are unavailable through this method but many are and they are very valuable when
+     * present in gold
+     */
+    val warehouseBaseFilled = if (isFirstRun) {
+      val firstRunMsg = "Silver_WarehouseSpec -- First run detected, will impute warehouse state from bronze to derive " +
+        "current initial state for all existing warehouses."
+      logger.log(Level.INFO, firstRunMsg)
+      println(firstRunMsg)
+      val missingWarehouseIds = bronzeWarehouseSnapUntilCurrent.select('organization_id, 'warehouse_id).distinct
+        .join(
+          warehouseBaseWMetaDF
+            .select('organization_id, 'warehouse_id).distinct,
+          Seq("organization_id", "warehouse_id"), "anti"
+        )
+      val latestWarehouseSnapW = Window.partitionBy('organization_id, 'wearhouse_id).orderBy('Pipeline_SnapTS.desc)
+      val missingClusterBaseFromSnap = bronzeWarehouseSnapUntilCurrent
+        .join(missingWarehouseIds, Seq("organization_id", "warehouse_id"))
+        .withColumn("rnk", rank().over(latestWarehouseSnapW))
+        .filter('rnk === 1).drop("rnk")
+        .select(
+          'organization_id,
+          'warehouse_id,
+          lit("warehouses").alias("serviceName"),
+          lit("snapImpute").alias("actionName"),
+          'warehouse_name,
+          'state.alias("warehouse_state"),
+          'size,
+          'cluster_size,
+          'min_num_clusters,
+          'max_num_clusters,
+          'auto_stop_mins,
+          'auto_resume,
+          'creator_id,
+          'spot_instance_policy,
+          'enable_photon,
+          'channel,
+          'tag,
+          'enable_serverless_compute,
+          'warehouse_type,
+          'num_clusters,
+          'num_active_sessions,
+          'jdbc_url,
+          'odbc_params
+          (unix_timestamp('Pipeline_SnapTS) * 1000).alias("timestamp"),
+          'Pipeline_SnapTS.cast("date").alias("date"),
+          'creator_name.alias("createdBy")
+        )
+
+      unionWithMissingAsNull(warehouseBaseWMetaDF, missingClusterBaseFromSnap)
+    } else warehouseBaseWMetaDF
+
+    warehouseBaseFilled
+  }
+
 }

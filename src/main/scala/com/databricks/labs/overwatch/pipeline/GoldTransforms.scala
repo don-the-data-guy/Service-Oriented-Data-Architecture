@@ -751,6 +751,47 @@ trait GoldTransforms extends SparkSessionWrapper {
     df.select(sparkExecutorCols: _*)
   }
 
+  protected def buildWarehouse()(df: DataFrame): DataFrame = {
+    val clusterCols: Array[Column] = Array(
+      'cluster_id,
+      'actionName.alias("action"),
+      'timestamp.alias("unixTimeMS"),
+      from_unixtime('timestamp.cast("double") / 1000).cast("timestamp").alias("timestamp"),
+      from_unixtime('timestamp.cast("double") / 1000).cast("timestamp").cast("date").alias("date"),
+      'cluster_name,
+      'driver_node_type_id.alias("driver_node_type"),
+      'node_type_id.alias("node_type"),
+      'num_workers,
+      'autoscale,
+      'autoTermination_minutes.alias("auto_termination_minutes"),
+      'enable_elastic_disk,
+      'is_automated,
+      'cluster_type,
+      'security_profile,
+      'cluster_log_conf,
+      'init_scripts,
+      'custom_tags,
+      'cluster_source,
+      'aws_attributes,
+      'azure_attributes,
+      'spark_env_vars,
+      'spark_conf,
+      'acl_path_prefix,
+      'driver_instance_pool_id,
+      'instance_pool_id,
+      'driver_instance_pool_name,
+      'instance_pool_name,
+      'spark_version,
+      'runtime_engine,
+      'idempotency_token,
+      'organization_id,
+      'deleted_by,
+      'createdBy.alias("created_by"),
+      'lastEditedBy.alias("last_edited_by")
+    )
+    df.select(clusterCols: _*)
+  }
+
   protected val clusterViewColumnMapping: String =
     """
       |organization_id, workspace_name, cluster_id, action, unixTimeMS, timestamp, date, cluster_name, driver_node_type,
@@ -867,6 +908,17 @@ trait GoldTransforms extends SparkSessionWrapper {
       |""".stripMargin
 
   protected val sqlQueryHistoryViewColumnMapping: String =
+    """
+      |organization_id,workspace_name,warehouse_id,query_id,query_end_time_ms,user_name,user_id,
+      |executed_as_user_id,executed_as_user_name,duration,error_message,execution_end_time_ms,
+      |query_start_time_ms,query_text,rows_produced,spark_ui_url,statement_type,status,
+      |compilation_time_ms,execution_time_ms,network_sent_bytes,photon_total_time_ms,
+      |pruned_bytes,pruned_files_count,read_bytes,read_cache_bytes,read_files_count,read_partitions_count,
+      |read_remote_bytes,result_fetch_time_ms,result_from_cache,rows_produced_count,rows_read_count,
+      |spill_to_disk_bytes,task_total_time_ms,total_time_ms,write_remote_bytes
+      |""".stripMargin
+
+  protected val warehouseViewColumnMapping: String =
     """
       |organization_id,workspace_name,warehouse_id,query_id,query_end_time_ms,user_name,user_id,
       |executed_as_user_id,executed_as_user_name,duration,error_message,execution_end_time_ms,

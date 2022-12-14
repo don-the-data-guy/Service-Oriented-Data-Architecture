@@ -699,6 +699,31 @@ object Schema extends SparkSessionWrapper {
     StructField("workspace_name", StringType, nullable = true)
   ))
 
+  val warehouseSnapMinimumSchema: StructType = StructType(Seq(
+    StructField("id", StringType, nullable = true),
+    StructField("name", StringType, nullable = true),
+    StructField("size", StringType, nullable = true),
+    StructField("cluster_size", StringType, nullable = true),
+    StructField("min_num_clusters", LongType, nullable = true),
+    StructField("max_num_clusters", LongType, nullable = true),
+    StructField("auto_stop_mins", LongType, nullable = true),
+    StructField("auto_resume", BooleanType, nullable = true),
+    StructField("creator_name", StringType, nullable = true),
+    StructField("creator_id", LongType, nullable = true),
+    StructField("tags", MapType(StringType, StringType, valueContainsNull = true), nullable = true),
+    StructField("spot_instance_policy", StringType, nullable = true),
+    StructField("enable_photon", BooleanType, nullable = true),
+    StructField("enable_serverless_compute", BooleanType, nullable = true),
+    StructField("warehouse_type", StringType, nullable = true),
+    StructField("num_clusters", LongType, nullable = true),
+    StructField("num_active_sessions", LongType, nullable = true),
+    StructField("state", StringType, nullable = true),
+    StructField("organization_id", StringType, nullable = false),
+    StructField("Pipeline_SnapTS", TimestampType, nullable = true),
+    StructField("Overwatch_RunID", StringType, nullable = true),
+    StructField("workspace_name", StringType, nullable = true)
+  ))
+
   /**
    * Minimum required schema by module. "Minimum Requierd Schema" means that at least these columns of these types
    * must exist for the downstream ETLs to function.

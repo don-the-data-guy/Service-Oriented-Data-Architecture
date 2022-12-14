@@ -151,6 +151,7 @@ class ApiMetaFactory {
       case "workspace/list" => new WorkspaceListApi
       case "sql/history/queries" => new SqlQueryHistoryApi
       case "clusters/resize" => new ClusterResizeApi
+      case "sql/warehouses" => new WarehouseListApi
       case _ => logger.log(Level.WARN, "API not configured, returning full dataset"); throw new Exception("API NOT SUPPORTED")
     }
     logger.log(Level.INFO, meta.toString)
@@ -239,4 +240,9 @@ class ClusterEventsApi extends ApiMeta {
   setDataframeColumn("events")
   setApiCallType("POST")
   setStoreInTempLocation(true)
+}
+
+class WarehouseListApi extends ApiMeta {
+  setDataframeColumn("warehouses")
+  setApiCallType("GET")
 }
