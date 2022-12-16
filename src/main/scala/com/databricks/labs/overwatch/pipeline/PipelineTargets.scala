@@ -315,7 +315,7 @@ abstract class PipelineTargets(config: Config) {
 
     lazy private[overwatch] val warehousesSpecTarget: PipelineTable = PipelineTable(
       name = "warehouse_spec_silver",
-      _keys = Array("unixTimeMS", "id"),
+      _keys = Array("unixTimeMS", "warehouse_id"),
       config,
       incrementalColumns = Array("unixTimeMS"),
       partitionBy = Seq("organization_id")
@@ -586,7 +586,7 @@ abstract class PipelineTargets(config: Config) {
 
     lazy private[overwatch] val warehouseTarget: PipelineTable = PipelineTable(
       name = "warehouse_gold",
-      _keys = Array("id", "unixTimeMS"),
+      _keys = Array("warehouse_id", "unixTimeMS"),
       config,
       incrementalColumns = Array("unixTimeMS"),
       partitionBy = Seq("organization_id")

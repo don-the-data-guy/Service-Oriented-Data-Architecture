@@ -333,7 +333,7 @@ class Silver(_workspace: Workspace, _database: Database, _config: Config)
     BronzeTargets.auditLogsTarget.asIncrementalDF(warehouseSpecModule, BronzeTargets.auditLogsTarget.incrementalColumns),
     Seq(
       buildWarehouseSpec(
-        BronzeTargets.clustersSnapshotTarget,
+        BronzeTargets.warehousesSnapshotTarget,
         warehouseSpecModule.isFirstRun,
         warehouseSpecModule.untilTime
       )),

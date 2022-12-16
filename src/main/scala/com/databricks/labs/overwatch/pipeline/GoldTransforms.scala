@@ -752,44 +752,38 @@ trait GoldTransforms extends SparkSessionWrapper {
   }
 
   protected def buildWarehouse()(df: DataFrame): DataFrame = {
-    val clusterCols: Array[Column] = Array(
-      'cluster_id,
-      'actionName.alias("action"),
+
+    val warehouseCols : Array[Column] = Array(
+      'warehouse_id,
+      'warehouse_name,
       'timestamp.alias("unixTimeMS"),
       from_unixtime('timestamp.cast("double") / 1000).cast("timestamp").alias("timestamp"),
       from_unixtime('timestamp.cast("double") / 1000).cast("timestamp").cast("date").alias("date"),
-      'cluster_name,
-      'driver_node_type_id.alias("driver_node_type"),
-      'node_type_id.alias("node_type"),
-      'num_workers,
-      'autoscale,
-      'autoTermination_minutes.alias("auto_termination_minutes"),
-      'enable_elastic_disk,
-      'is_automated,
-      'cluster_type,
-      'security_profile,
-      'cluster_log_conf,
-      'init_scripts,
-      'custom_tags,
-      'cluster_source,
-      'aws_attributes,
-      'azure_attributes,
-      'spark_env_vars,
-      'spark_conf,
-      'acl_path_prefix,
-      'driver_instance_pool_id,
-      'instance_pool_id,
-      'driver_instance_pool_name,
-      'instance_pool_name,
-      'spark_version,
-      'runtime_engine,
-      'idempotency_token,
       'organization_id,
-      'deleted_by,
-      'createdBy.alias("created_by"),
-      'lastEditedBy.alias("last_edited_by")
+      'serviceName.alias("service_name"),
+      'actionName.alias("action_name"),
+      'userEmail.alias("user_email"),
+      'cluster_size,
+      'min_num_clusters,
+      'max_num_clusters,
+      'auto_stop_mins,
+      'spot_instance_policy,
+      'enable_photon,
+      'channel,
+      'enable_serverless_compute,
+      'warehouse_type,
+      'warehouse_state,
+      'size,
+      'auto_resume,
+      'creator_id,
+      'tags,
+      'num_clusters,
+      'num_active_sessions,
+      'jdbc_url,
+      'createdBy.alias("created_by")
     )
-    df.select(clusterCols: _*)
+
+    df.select(warehouseCols: _*)
   }
 
   protected val clusterViewColumnMapping: String =
@@ -920,13 +914,10 @@ trait GoldTransforms extends SparkSessionWrapper {
 
   protected val warehouseViewColumnMapping: String =
     """
-      |organization_id,workspace_name,warehouse_id,query_id,query_end_time_ms,user_name,user_id,
-      |executed_as_user_id,executed_as_user_name,duration,error_message,execution_end_time_ms,
-      |query_start_time_ms,query_text,rows_produced,spark_ui_url,statement_type,status,
-      |compilation_time_ms,execution_time_ms,network_sent_bytes,photon_total_time_ms,
-      |pruned_bytes,pruned_files_count,read_bytes,read_cache_bytes,read_files_count,read_partitions_count,
-      |read_remote_bytes,result_fetch_time_ms,result_from_cache,rows_produced_count,rows_read_count,
-      |spill_to_disk_bytes,task_total_time_ms,total_time_ms,write_remote_bytes
+      |organization_id,workspace_name,warehouse_id,warehouse_name,unixTimeMS,timestamp,date,service_name,action_name,
+      |user_email,cluster_size,min_num_clusters,max_num_clusters,auto_stop_mins,spot_instance_policy,enable_photon,
+      |channel,enable_serverless_compute,warehouse_type,warehouse_state,size,auto_resume,creator_id,tags,num_clusters,
+      |num_active_sessions,jdbc_url,created_by
       |""".stripMargin
 
 }

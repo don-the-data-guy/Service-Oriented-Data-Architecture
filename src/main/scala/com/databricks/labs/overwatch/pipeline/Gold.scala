@@ -239,7 +239,7 @@ class Gold(_workspace: Workspace, _database: Database, _config: Config)
   lazy private val appendWarehouseProcess = ETLDefinition(
     SilverTargets.warehousesSpecTarget.asIncrementalDF(warehouseModule, "timestamp"),
     Seq(buildWarehouse()),
-    append(GoldTargets.clusterTarget)
+    append(GoldTargets.warehouseTarget)
   )
 
   private def processSparkEvents(): Unit = {

@@ -1292,35 +1292,35 @@ trait SilverTransforms extends SparkSessionWrapper {
   }
 
   private def warehouseBase(auditRawDF: DataFrame): DataFrame = {
-    val warehouse_id_gen_w = Window.partitionBy('organization_id, 'name).orderBy('timestamp).rowsBetween(Window.currentRow, 1000)
-    val warehouse_name_gen_w = Window.partitionBy('organization_id, 'id).orderBy('timestamp).rowsBetween(Window.currentRow, 1000)
-    val warehouse_id_gen = first('id, true).over(warehouse_id_gen_w)
-    val warehouse_name_gen = first('name, true).over(warehouse_name_gen_w)
+    val warehouse_id_gen_w = Window.partitionBy('organization_id, 'warehouse_name).orderBy('timestamp).rowsBetween(Window.currentRow, 1000)
+    val warehouse_name_gen_w = Window.partitionBy('organization_id, 'warehouse_id).orderBy('timestamp).rowsBetween(Window.currentRow, 1000)
+    val warehouse_id_gen = first('warehouse_id, true).over(warehouse_id_gen_w)
+    val warehouse_name_gen = first('warehouse_name, true).over(warehouse_name_gen_w)
 
     val warehouseSummaryCols = auditBaseCols ++ Array[Column](
       when('actionName === "createEndpoint" || 'actionName === "createWarehouse", get_json_object($"response.result", "$.id"))
-        .when(('actionName =!= "createEndpoint" && 'id.isNull) || ('actionName =!= "createWarehouse" && 'id.isNull), 'clusterId)
-        .otherwise('warehouse_id).alias("warehouse_id"),
-      when('warehouse_name.isNull, 'name).otherwise('warehouse_name).alias("warehouse_name"),
-      'state.alias("warehouse_state"),
-      'size,
+        .when(('actionName =!= "createEndpoint" && 'id.isNull) || ('actionName =!= "createWarehouse" && 'id.isNull), 'warehouseId)
+        .otherwise('id).alias("warehouse_id"),
+      'name.alias("warehouse_name"),
+//      'state.alias("warehouse_state"), // not present in audit log
+//      'size,
       'cluster_size,
-      'min_num_clusters,
-      'max_num_clusters,
-      'auto_stop_mins,
-      'auto_resume,
-      'creator_name,
-      'creator_id,
+      'min_num_clusters.cast("long"),
+      'max_num_clusters.cast("long"),
+      'auto_stop_mins.cast("long"),
+//      'auto_resume, // not present in audit log , check if can be taken from snapshot
+//      'creator_name, // creator is present in audit log ,  check if creator_name can be taken from snapshot
+//      'creator_id, // creator is present,  check if creator_id can be taken from snapshot
       'spot_instance_policy,
-      'enable_photon,
+      'enable_photon.cast("boolean"),
       'channel,
-      'tag,
-      'enable_serverless_compute,
-      'warehouse_type,
-      'num_clusters,
-      'num_active_sessions,
-      'jdbc_url,
-      'odbc_params
+//      'tag,
+      'enable_serverless_compute.cast("boolean"),
+      'warehouse_type
+//      'num_clusters, // not present in audit log, check if can be taken from snapshot
+//      'num_active_sessions, // not present in audit log, check if can be taken from snapshot
+//      'jdbc_url,  // not present in audit log, check if can be taken from snapshot
+//      'odbc_params  // not present in audit log, check if can be taken from snapshot
     )
 
     val warehouseRaw = auditRawDF
@@ -1330,7 +1330,14 @@ trait SilverTransforms extends SparkSessionWrapper {
       .withColumn("warehouse_id", warehouse_id_gen)
       .withColumn("warehouse_name", warehouse_name_gen)
 
-    warehouseRaw
+//    warehouseRaw
+
+    val warehouseWithStructs = warehouseRaw
+      .withColumn("channel", SchemaTools.structFromJson(spark, warehouseRaw, "channel"))
+      .scrubSchema
+
+    warehouseWithStructs
+//      .withColumn("channel", SchemaTools.structToMap(warehouseWithStructs, "channel"))
   }
 
   protected def buildWarehouseSpec(
@@ -1338,9 +1345,9 @@ trait SilverTransforms extends SparkSessionWrapper {
                                   isFirstRun: Boolean,
                                   untilTime: TimeTypes
                                 )(df: DataFrame): DataFrame = {
-    val lastWarehouseSnap = Window.partitionBy('organization_id, 'id).orderBy('Pipeline_SnapTS.desc)
-    val warehouseBefore = Window.partitionBy('organization_id, 'id)
-      .orderBy('timestamp).rowsBetween(-1000, Window.currentRow)
+//    val lastWarehouseSnap = Window.partitionBy('organization_id, 'id).orderBy('Pipeline_SnapTS.desc)
+//    val warehouseBefore = Window.partitionBy('organization_id, 'id)
+//      .orderBy('timestamp).rowsBetween(-1000, Window.currentRow)
 
     val warehouseBaseDF = warehouseBase(df)
     val warehouseBaseWMetaDF = warehouseBaseDF
@@ -1360,14 +1367,15 @@ trait SilverTransforms extends SparkSessionWrapper {
         "current initial state for all existing warehouses."
       logger.log(Level.INFO, firstRunMsg)
       println(firstRunMsg)
-      val missingWarehouseIds = bronzeWarehouseSnapUntilCurrent.select('organization_id, 'warehouse_id).distinct
+      val missingWarehouseIds = bronzeWarehouseSnapUntilCurrent.select('organization_id,
+        'id.alias("warehouse_id")).distinct
         .join(
           warehouseBaseWMetaDF
             .select('organization_id, 'warehouse_id).distinct,
           Seq("organization_id", "warehouse_id"), "anti"
         )
-      val latestWarehouseSnapW = Window.partitionBy('organization_id, 'wearhouse_id).orderBy('Pipeline_SnapTS.desc)
-      val missingClusterBaseFromSnap = bronzeWarehouseSnapUntilCurrent
+      val latestWarehouseSnapW = Window.partitionBy('organization_id, 'warehouse_id).orderBy('Pipeline_SnapTS.desc)
+      val missingWareHouseBaseFromSnap = bronzeWarehouseSnapUntilCurrent.withColumn("warehouse_id",$"id")
         .join(missingWarehouseIds, Seq("organization_id", "warehouse_id"))
         .withColumn("rnk", rank().over(latestWarehouseSnapW))
         .filter('rnk === 1).drop("rnk")
@@ -1376,7 +1384,7 @@ trait SilverTransforms extends SparkSessionWrapper {
           'warehouse_id,
           lit("warehouses").alias("serviceName"),
           lit("snapImpute").alias("actionName"),
-          'warehouse_name,
+          'name.alias("warehouse_name"),
           'state.alias("warehouse_state"),
           'size,
           'cluster_size,
@@ -1388,7 +1396,7 @@ trait SilverTransforms extends SparkSessionWrapper {
           'spot_instance_policy,
           'enable_photon,
           'channel,
-          'tag,
+          'tags,
           'enable_serverless_compute,
           'warehouse_type,
           'num_clusters,
@@ -1399,11 +1407,11 @@ trait SilverTransforms extends SparkSessionWrapper {
           'Pipeline_SnapTS.cast("date").alias("date"),
           'creator_name.alias("createdBy")
         )
-
-      unionWithMissingAsNull(warehouseBaseWMetaDF, missingClusterBaseFromSnap)
+      unionWithMissingAsNull(warehouseBaseWMetaDF, missingWareHouseBaseFromSnap)
     } else warehouseBaseWMetaDF
 
     warehouseBaseFilled
+
   }
 
 }
