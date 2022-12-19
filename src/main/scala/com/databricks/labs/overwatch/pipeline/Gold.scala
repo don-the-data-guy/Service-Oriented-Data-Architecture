@@ -237,7 +237,7 @@ class Gold(_workspace: Workspace, _database: Database, _config: Config)
 
   lazy private[overwatch] val warehouseModule = Module(3018, "Gold_Warehouse", this, Array(2021))
   lazy private val appendWarehouseProcess = ETLDefinition(
-    SilverTargets.warehousesSpecTarget.asIncrementalDF(warehouseModule, "timestamp"),
+    SilverTargets.warehousesSpecTarget.asIncrementalDF(warehouseModule, SilverTargets.warehousesSpecTarget.incrementalColumns),
     Seq(buildWarehouse()),
     append(GoldTargets.warehouseTarget)
   )

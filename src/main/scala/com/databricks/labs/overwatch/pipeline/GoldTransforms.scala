@@ -756,9 +756,6 @@ trait GoldTransforms extends SparkSessionWrapper {
     val warehouseCols : Array[Column] = Array(
       'warehouse_id,
       'warehouse_name,
-      'timestamp.alias("unixTimeMS"),
-      from_unixtime('timestamp.cast("double") / 1000).cast("timestamp").alias("timestamp"),
-      from_unixtime('timestamp.cast("double") / 1000).cast("timestamp").cast("date").alias("date"),
       'organization_id,
       'serviceName.alias("service_name"),
       'actionName.alias("action_name"),
@@ -780,6 +777,8 @@ trait GoldTransforms extends SparkSessionWrapper {
       'num_clusters,
       'num_active_sessions,
       'jdbc_url,
+      'unixTimeMS,
+      'date,
       'createdBy.alias("created_by")
     )
 
@@ -914,10 +913,10 @@ trait GoldTransforms extends SparkSessionWrapper {
 
   protected val warehouseViewColumnMapping: String =
     """
-      |organization_id,workspace_name,warehouse_id,warehouse_name,unixTimeMS,timestamp,date,service_name,action_name,
+      |organization_id,workspace_name,warehouse_id,warehouse_name,service_name,action_name,
       |user_email,cluster_size,min_num_clusters,max_num_clusters,auto_stop_mins,spot_instance_policy,enable_photon,
       |channel,enable_serverless_compute,warehouse_type,warehouse_state,size,auto_resume,creator_id,tags,num_clusters,
-      |num_active_sessions,jdbc_url,created_by
+      |num_active_sessions,jdbc_url,unixTimeMS,date,created_by
       |""".stripMargin
 
 }

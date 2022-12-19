@@ -762,6 +762,8 @@ object Schema extends SparkSessionWrapper {
     2017 -> auditMasterSchema,
     // Notebook Summary
     2018 -> auditMasterSchema,
+    // Warehouse Spec
+    2021 -> auditMasterSchema,
     // jobStatus
     3002 -> StructType(Seq(
       StructField("timestamp", LongType, nullable = false),

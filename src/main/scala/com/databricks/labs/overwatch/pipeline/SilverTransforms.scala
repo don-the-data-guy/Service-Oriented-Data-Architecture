@@ -1368,14 +1368,15 @@ trait SilverTransforms extends SparkSessionWrapper {
       logger.log(Level.INFO, firstRunMsg)
       println(firstRunMsg)
       val missingWarehouseIds = bronzeWarehouseSnapUntilCurrent.select('organization_id,
-        'id.alias("warehouse_id")).distinct
+        'warehouse_id).distinct
         .join(
           warehouseBaseWMetaDF
             .select('organization_id, 'warehouse_id).distinct,
           Seq("organization_id", "warehouse_id"), "anti"
         )
       val latestWarehouseSnapW = Window.partitionBy('organization_id, 'warehouse_id).orderBy('Pipeline_SnapTS.desc)
-      val missingWareHouseBaseFromSnap = bronzeWarehouseSnapUntilCurrent.withColumn("warehouse_id",$"id")
+      //.withColumn("warehouse_id",$"id")
+      val missingWareHouseBaseFromSnap = bronzeWarehouseSnapUntilCurrent
         .join(missingWarehouseIds, Seq("organization_id", "warehouse_id"))
         .withColumn("rnk", rank().over(latestWarehouseSnapW))
         .filter('rnk === 1).drop("rnk")
@@ -1402,8 +1403,8 @@ trait SilverTransforms extends SparkSessionWrapper {
           'num_clusters,
           'num_active_sessions,
           'jdbc_url,
-          'odbc_params
-          (unix_timestamp('Pipeline_SnapTS) * 1000).alias("timestamp"),
+          'odbc_params,
+          (unix_timestamp('Pipeline_SnapTS) * 1000).alias("unixTimeMS"),
           'Pipeline_SnapTS.cast("date").alias("date"),
           'creator_name.alias("createdBy")
         )

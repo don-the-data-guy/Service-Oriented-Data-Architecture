@@ -956,6 +956,6 @@ trait BronzeTransforms extends SparkSessionWrapper {
     outputDF
       .withColumn("tags", SchemaTools.structToMap(outputDF, "tags"))
       .withColumn("odbc_params", SchemaTools.structToMap(outputDF, "odbc_params"))
-
+      .withColumnRenamed("id","warehouse_id")
   }
 }
