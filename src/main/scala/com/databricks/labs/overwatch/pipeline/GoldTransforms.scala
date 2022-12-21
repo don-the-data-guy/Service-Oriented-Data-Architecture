@@ -777,8 +777,9 @@ trait GoldTransforms extends SparkSessionWrapper {
       'num_clusters,
       'num_active_sessions,
       'jdbc_url,
-      'unixTimeMS,
-      'date,
+      'timestamp.alias("unixTimeMS"),
+      from_unixtime('timestamp.cast("double") / 1000).cast("timestamp").alias("timestamp"),
+      from_unixtime('timestamp.cast("double") / 1000).cast("timestamp").cast("date").alias("date"),
       'createdBy.alias("created_by")
     )
 
