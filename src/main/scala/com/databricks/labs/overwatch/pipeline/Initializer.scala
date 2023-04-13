@@ -1,3 +1,19 @@
+/*
+*** The Scala program you linked to is part of the "Overwatch" project by Databricks, which provides a framework for building scalable, maintainable,
+*** and modular data pipelines using Apache Spark. More specifically, the BronzeTransforms.scala file contains a set of functions for transforming raw,
+*** "bronze" data into a more refined format.
+*** 
+*** The main purpose of the BronzeTransforms object is to define several functions that can be used to transform incoming data streams. 
+*** These functions typically take a DataFrame (i.e., a distributed collection of data) as input and return a new DataFrame that has been modified in 
+*** some way. Here are some of the key functions defined in this file:
+*** - addMetadata: This function adds metadata to a DataFrame, including information about the source of the data, the timestamp of when it was ingested, and any other relevant contextual information.
+*** - extractJson: This function extracts data from JSON-formatted strings that are embedded within a larger DataFrame.
+*** - parseTimestamps: This function parses timestamps in various formats (e.g., ISO-8601) and converts them to a standardized format.
+*** - transformUsageData: This function applies a set of transformations to usage data (i.e., data that describes how a particular resource is being used) in order to clean and reformat it.
+*** - transformWeblogs: This function applies a similar set of transformations to web log data (i.e., data that describes website traffic) in order to extract key information and prepare it for further analysis.
+*** Overall, the BronzeTransforms object provides a set of powerful and flexible tools for transforming raw data into a more usable format. These tools can be customized and extended as needed to support a wide range of data sources and processing requirements.
+*/
+
 package com.databricks.labs.overwatch.pipeline
 
 import com.databricks.dbutils_v1.DBUtilsHolder.dbutils
