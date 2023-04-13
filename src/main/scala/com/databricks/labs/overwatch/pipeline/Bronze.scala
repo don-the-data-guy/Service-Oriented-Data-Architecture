@@ -1,3 +1,23 @@
+/**
+*** The Overwatch project developed by Databricks Labs. Specifically, it defines a "Bronze" data pipeline for the project.
+*** Here are some key things that the Bronze pipeline does:
+*** 1) Reads data from a specified data source: The Bronze pipeline reads data from a specified data source, such as a file or a database. 
+*** The data is read into a Spark DataFrame.
+*** 2) Applies schema inference and validation: The Bronze pipeline applies schema inference and validation to the input data. 
+*** This means that it tries to automatically infer the schema of the input data and validate it against a set of predefined rules. 
+*** The inferred schema is then used to create a new DataFrame with the validated data.
+*** 3) Applies data transformations: The Bronze pipeline applies various data transformations to the input data. 
+*** These transformations may include filtering, cleaning, and aggregating the data. 
+*** The resulting transformed DataFrame is used as the output of the pipeline.
+*** 4) Writes data to a specified output path: The Bronze pipeline writes the transformed data to a specified output path, such as a file or a database. 
+*** The output data is typically stored in a format that is optimized for downstream processing.
+*** 
+*** Overall, the Bronze pipeline is a critical part of the Overwatch project, as it provides a way to process and prepare input data for 
+*** downstream analytics and machine learning. 
+*** 
+*** The pipeline applies schema inference and validation to ensure data quality, and applies various transformations to prepare the data for analysis.
+*/
+
 package com.databricks.labs.overwatch.pipeline
 
 import com.databricks.labs.overwatch.env.{Database, Workspace}
